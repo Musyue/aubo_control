@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 def logger_init():
     # Log等级总开关
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.ERROR)
 
     # 创建log目录
     if not os.path.exists('./logfiles'):
