@@ -29,7 +29,7 @@ def main(test_count):
     try:
 
         # 链接服务器
-        ip = '192.168.1.12'
+        ip = '192.168.1.11'
         port = 8899
         result = robot.connect(ip, port)
 
@@ -100,7 +100,7 @@ def main(test_count):
                 # robot.set_end_max_line_velc(0.2)
                 robot.set_end_max_line_velc(0.5)
                 
-                joint_radian = deg_to_rad((4.57,36.47,130.57,73.98,81.65,4.85))#((0,0,0,0,0,0))
+                joint_radian = deg_to_rad((-41.279,57.896,147.5397,93.8056,87.2035,10.226))#((0,0,0,0,0,0))
                 # joint_radian = deg_to_rad((26.989,-27.6548,65.601,91.180,67.706,4.885))#((0,0,0,0,0,0))
                 logger.info("move joint to {0}".format(joint_radian))
                 robot.move_joint(joint_radian)
