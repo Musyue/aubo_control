@@ -7,22 +7,23 @@ from aubo_robotcontrol import *
 import time
 import numpy
 import os
-import socket
 from aubo_kienamtics import *
 import yaml
+import socket
+import threading
+import commands
+import re
 class MoveSmartEyeVisonControl():
     def __init__(self):
         self.configname='/data/ros/code/test_ws/src/aubo_control/config/camera_aubo_config.yaml'
         self.yamlDic=None
         self.Opreating_yaml()
         self.SmartEye_bTc=self.yamlDic['TBC']
+        self.EE_TCP_DIS=self.yamlDic['EE_DIS_TCP']
         self.aubo_my_kienamatics=Aubo_kinematics()
-        # self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.tcp_socket.bind(("", self.yamlDic['ServerPort']))#192.168.1.23
-        # self.tcp_socket.listen(128)
-        # self.client_socket_client_addr = self.tcp_socket.accept()
-        
-        # self.client_scoket=client_socket
+        self.camera_data=[]
+        self.camera_dict={}
+        # self.send_s1_flag = rospy.get_param("send_s1_flag")#USe for open camera
         
         self.Aubo_IP=self.yamlDic['AuboIP']
         self.maxacctuple=tuple(self.yamlDic['Aubomaxacctuple'])
@@ -41,6 +42,33 @@ class MoveSmartEyeVisonControl():
         for i in tuplelist:
             dd.append(i * math.pi / 180)
         return tuple(dd)
+    def socket_read(self,socket_info,):
+        while True:
+            recv_data = socket_info.recv(1024)
+            if recv_data:
+                print(recv_data.decode('utf-8'))      #windows,gbk encoding
+                # self.camera_data=recv_data
+                
+                nums=re.findall(r'-?\d+\.*\d*', recv_data)
+                if len(nums)>=6:
+                    returndata = {"x":float(nums[0]),"y":float(nums[1]),"z":float(nums[2]),"a":float(nums[3]),"b":float(nums[4]),"c":float(nums[5])}
+                    self.camera_dict=returndata
+
+    def socket_write(self,socket_info,):
+        count=0
+        while True:
+            status,output=commands.getstatusoutput("rosparam get /move2_camera_ns/send_s1_flag")
+            # send_s1_flag = rospy.get_param("send_s1_flag")#USe for open camera
+            print(output)
+            # print("send_s1_flag---:%d",send_s1_flag)
+            #here we need to a flag to open this function
+            if int(output):
+                socket_info.send("S1".encode('utf-8'))
+                # time.sleep(20)
+                count+=1
+                print("go to next point %d",count)
+            else:
+                print("waiting next camera opreating--")
     def Init_aubo_driver(self):
         # 初始化logger
         #logger_init()
@@ -133,21 +161,21 @@ class MoveSmartEyeVisonControl():
     def Aubo_forward_kinematics(self,robot,jointangular):
         joint_radian = self.deg_to_rad(jointangular)
         fk_ret = robot.forward_kin(joint_radian)
-        print("fk--------")
-        print(fk_ret)
+        # print("fk--------")
+        # print(fk_ret)
         return fk_ret
     def Aubo_inverse_kinematics(self,robot,jointangular,newpose,neworientaion_Quaternion):
         # 获取关节最大加速度
         print(robot.get_joint_maxacc())
         joint_radian = jointangular#self.deg_to_rad(jointangular)
-        print("pose and ori")
-        print(newpose)
-        print(neworientaion_Quaternion)
+        # print("pose and ori")
+        # print(newpose)
+        # print(neworientaion_Quaternion)
         pos_test = newpose#(-0.5672477590258516, 0.51507448660946279, 0.57271770314023)  # the right
         ori_test = neworientaion_Quaternion#(0.49380082661500474, 0.5110471735827042, -0.5086787259664434, -0.48604267688817565)
-        print("----ik----after--------")
+        # print("----ik----after--------")
         ik_result = robot.inverse_kin(joint_radian, pos_test, ori_test)
-        print(ik_result)
+        # print(ik_result)
         return ik_result
     def Aubo_Line_trajectory(self,robot,start_point,End_point,):
         joint_radian = self.deg_to_rad(start_point)
@@ -194,9 +222,9 @@ class MoveSmartEyeVisonControl():
         """
 
         bTe=self.aubo_my_kienamatics.aubo_forward(jointangular)
-        print("bTe",numpy.matrix(bTe).reshape((4,4)))
+        # print("bTe",numpy.matrix(bTe).reshape((4,4)))
         bTcp=self.list_change_3_7_11(bTe,trans_bTcp)
-        print("bTcp",numpy.matrix(bTcp).reshape((4,4)))
+        # print("bTcp",numpy.matrix(bTcp).reshape((4,4)))
         eTcp=numpy.dot(numpy.matrix(bTe).reshape((4,4)).I,numpy.matrix(bTcp).reshape((4,4)))
         return eTcp
     def caculate_bTe_from_bTcp_matrix_with_my_kienamatics(self,point_data,eTcp,jointangular):
@@ -204,8 +232,8 @@ class MoveSmartEyeVisonControl():
         # print bTp.tolist()
         list_data=bTp.tolist()
         bTe=self.aubo_my_kienamatics.aubo_forward(jointangular)
-
-        bTcp_point=self.list_change_3_7_11(bTe,[list_data[0][0],list_data[1][0],list_data[2][0]])
+        # print("self.EE_TCP_DIS]",self.EE_TCP_DIS,list_data[2][0])
+        bTcp_point=self.list_change_3_7_11(bTe,[list_data[0][0],list_data[1][0],list_data[2][0]])#here minus tcp to polishing tools
         
         print(bTcp_point)
         bTe=numpy.dot(numpy.matrix(bTcp_point).reshape((4,4)),numpy.matrix(eTcp).reshape((4,4)).I)
@@ -238,9 +266,16 @@ class MoveSmartEyeVisonControl():
         self.tcp_socket.close()
     def close_client_socket(self,):
         self.client_scoket.close()
+    def regex_from_camera_data(self,strdata):
+        # returndata={}
+        nums=re.findall(r'\d+(?:\.\d+)?', strdata)
+        print("num---",nums)
+        returndata = {"x":float(nums[0]),"y":float(nums[1]),"z":float(nums[2]),"a":float(nums[3]),"b":float(nums[4]),"c":float(nums[5])}
+        return returndata
 def main():
     
-    Point_data_1=[-0.1614828, -0.1470064, 0.59]#1.033339]#[0.15765,-0.05829,0.9410576]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
+
+    Point_data_1=[0.09538765,-0.09967687,0.8083981]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
     ratet=1
     Aub=MoveSmartEyeVisonControl()
     Aub.Init_node()
@@ -254,19 +289,45 @@ def main():
         Aub.Aubo_trajectory_init(Robot)
     except:
         rospy.loginfo("init aubo not OK")
+    try:
+        tcp_socket_host = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        tcp_socket_host.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,True)
+        tcp_socket_host.bind(('',8090))
+        tcp_socket_host.listen(128)
+        socket_info,addr_client=tcp_socket_host.accept()
+        print(socket_info)
+        print(addr_client)
+
+        t1=threading.Thread(target=Aub.socket_read,args=(socket_info,))
+        t2=threading.Thread(target=Aub.socket_write,args=(socket_info,))
+        t1.start()
+        t2.start()
+        rospy.loginfo("init connect with smarteye windows version OK")
+    except:
+        rospy.loginfo("init connect with smarteye windows version not OK")
     # try:
     while not rospy.is_shutdown():
 
         # Aub.Aubo_Move_to_Point(Robot,StartPoint)
         # Aub.Aubo_forward_kinematics(Robot,StartPoint)
     
-        bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
-        joint_p1_in_jointspace=Aub.get_joint_rad_from_inv(bTe_p1,Aub.yamlDic['StartPoint'])
-        print(joint_p1_in_jointspace)
-        print(Aub.rad_to_degree(joint_p1_in_jointspace))
-        # Aub.tcp_connect_with_windows()
-        # print(Aub.yamlDic)
-        Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
+        # bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
+        # joint_p1_in_jointspace=Aub.get_joint_rad_from_inv(bTe_p1,Aub.yamlDic['StartPoint'])
+        # print Aub.rad_to_degree(joint_p1_in_jointspace)
+        aubo_back_initial_flag = rospy.get_param("aubo_back_initial_flag")#USe for open camera
+        if len(Aub.camera_dict)!=0:
+            print("Aub.camera_dict",Aub.camera_dict)
+            Point_data_1=[Aub.camera_dict['x'],Aub.camera_dict['y'],Aub.camera_dict['z']+Aub.EE_TCP_DIS]
+            print("Point_data_1",Point_data_1)
+            # Point_data_1=[0.023553,-0.029475,0.954204]#[-0.037234,-0.02911256,0.7087903]#[0.017991,-0.0300379,0.952594+Aub.EE_TCP_DIS]
+            bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
+            joint_p1_in_jointspace=Aub.get_joint_rad_from_inv(bTe_p1,Aub.yamlDic['StartPoint'])
+            print(Aub.rad_to_degree(joint_p1_in_jointspace))
+            if aubo_back_initial_flag==0:
+                Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
+            else:
+                Aub.Aubo_Move_to_Point(Robot,Aub.yamlDic['StartPoint'])
+        
         rate.sleep()
     # except:
     #     pass
