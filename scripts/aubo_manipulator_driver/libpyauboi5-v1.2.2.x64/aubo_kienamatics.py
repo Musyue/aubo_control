@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from math import *
 import numpy
+from transfer import *
 """
 a2 = 0.266;
 a3 = 0.2565;
@@ -367,7 +368,7 @@ class Aubo_kinematics():
                     q_sols_selected.update({num:q_sols[i]})
                     num+=1
 
-        num_sols = num;
+        num_sols = num
 
         if(num > 0):
             return True,q_sols_selected
@@ -386,8 +387,8 @@ class Aubo_kinematics():
         q_sols_all,num_sols = self.aubo_inverse(T_target)
         
         if(len(q_sols_all) != 0):
-            for i in q_sols_all:
-                print("num:"+str(i)+' '+"sols",q_sols_all[i])
+            # for i in q_sols_all:
+                # print("num:"+str(i)+' '+"sols",q_sols_all[i])
             #remove not in limited data 
             ret2,q_sols_inlimit = self.selectIK(q_sols_all, AngleLimit)
             # print "q_sols_inlimit",q_sols_inlimit
@@ -398,7 +399,7 @@ class Aubo_kinematics():
                 if(True == ret3):
                 
                     print(" find solution choose  ")
-                    print q_result
+                    # print(q_result)
                     return q_result
                 
                 else:
@@ -415,12 +416,57 @@ class Aubo_kinematics():
             print("inverse result num is 0")
             # return False
         
-    
+    def rpy_trans_2_new_T(self,rpyvalue,transvalue):
+        """
+        rpy:deg
+        transvalue:m
+        """
+        TR=rpy2r(rpyvalue[0],rpyvalue[1],rpyvalue[2]).tolist()
+        NewT=[TR[2][2],TR[1][2],TR[0][2],transvalue[0],
+            TR[2][1],TR[1][1],TR[0][1],transvalue[1],
+            TR[2][0],TR[1][0],TR[0][0],transvalue[2],
+            0,0,0,1
+        ]
+        return NewT
+    def martix_to_list(self,data):
+        return data[0]+data[1]+data[2]+data[3]
+    def trans_2_tcp(self,tcptranslation,eeT):
+        res=[]
+        for i in range(len(eeT)):
+            if i ==3:
+                res.append(tcptranslation[0])
+            elif i==7:
+                res.append(tcptranslation[1])
+            elif i==11:
+                res.append(tcptranslation[2])
+            else:
+                res.append(eeT[i])
+        return res
 def main():
     ak47=Aubo_kinematics()
-    # print ak47.aubo_forward([-3.3364,12.406,-81.09,-91.207,-86.08,0.164])
+    startpoint=[-146.8159,-76.32,92.113,143.4119,94.116,-15.47]
+    # print(ak47.aubo_forward(startpoint))
+    BTE=ak47.aubo_forward(startpoint)
+    print("BTE",BTE)
+    tcptrans=(-1.044,-0.494,-0.27564)
+    Tnew=ak47.trans_2_tcp(tcptrans,BTE)
+    print("Tnew",Tnew)
+    ETcp=numpy.dot(numpy.matrix((BTE)).reshape((4,4)).I,numpy.matrix((Tnew)).reshape((4,4)))
+    # print(ETcp)
+    # print(ETcp.I)
+    # rpy = (149.38 / 180.0 * pi, 15.64/ 180.0 * pi, -43.91 / 180.0 * pi)
+    # print(rpy2r(rpy[0],rpy[1],rpy[2]).tolist())
+
+    Newtt=ak47.rpy_trans_2_new_T((110.583 / 180.0 * pi, 5.26/ 180.0 * pi, -30.467 / 180.0 * pi),(-1.044,-0.494,-0.27564))
+    print(Newtt)
+    EtB=numpy.dot(numpy.matrix((Newtt)).reshape((4,4)),ETcp.I)
+    print("---EtB---",ak47.martix_to_list(EtB.tolist()))
+    EtBnew=ak47.martix_to_list(EtB.tolist())
+    print(ak47.GetInverseResult(EtBnew,ak47.degree_to_rad([-146.8159,-76.32,92.113,143.4119,94.116,-15.47])))
+    print(ak47.degree_to_rad([-146.8159,-76.32,92.113,143.4119,94.116,-15.47]))
+    # print(rpy2tr(rpy[0],rpy[1],rpy[2]))
     # print numpy.matrix(ak47.aubo_forward([-3.3364,12.406,-81.09,-91.207,-86.08,0.164])).reshape((4,4))
-    tt=[0.010016939985065143, -0.039901099098502056, -0.9991534232559417, -0.3, -0.999934201568705, 0.005186605233011846, -0.010231894219208601, -0.09507448660946277, 0.005590478198847001, 0.999190172798396, -0.039846519755429126, 0.5962177031402299, 0, 0, 0, 1]
+    # tt=[0.010016939985065143, -0.039901099098502056, -0.9991534232559417, -0.3, -0.999934201568705, 0.005186605233011846, -0.010231894219208601, -0.09507448660946277, 0.005590478198847001, 0.999190172798396, -0.039846519755429126, 0.5962177031402299, 0, 0, 0, 1]
     # tt=[1.0, 0.0, 0.0, -0.4, 0.0, -1.0, -0.0, -0.8500000000000001, 0.0, 0.0, -1.0, -0.4, 0.0, 0.0, 0.0, 1.0]
     # tt=[1.0, 0.0, 0.0, -0.4, 0.0, -1.0, -0.0, -0.4500000000000001, 0.0, 0.0, -1.0, -0.4, 0.0, 0.0, 0.0, 1.0]
     # q_dict,num=ak47.aubo_inverse(tt)
@@ -428,6 +474,6 @@ def main():
     # for i in range(len(q_dict)):
     #     print i,q_dict[i]
     # print ak47.degree_to_rad([-3.3364,12.406,-81.09,-91.207,-86.08,0.164])
-    print ak47.GetInverseResult(tt,ak47.degree_to_rad([-3.3364,12.406,-81.09,-91.207,-86.08,0.164]))
+    # print(ak47.GetInverseResult(tt,ak47.degree_to_rad([-3.3364,12.406,-81.09,-91.207,-86.08,0.164])))
 if __name__=="__main__":
     main()

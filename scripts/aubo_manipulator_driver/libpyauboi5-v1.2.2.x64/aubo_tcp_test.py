@@ -3,12 +3,16 @@
 import math
 from aubo_robotcontrol import *
 from aubo_kienamatics import *
+import random 
+num = random.randint(-100,100)
+print("num",num)
 def deg_to_rad(tuplelist):
     dd=[]
     for i in tuplelist:
         dd.append(i*math.pi/180)
     return tuple(dd)
-def main(test_count):
+# def 
+def main():
     # 初始化logger
     logger_init()
 
@@ -73,39 +77,54 @@ def main(test_count):
             # 当前机械臂是否运行在联机模式
             # logger.info("robot online mode is {0}".format(robot.is_online_mode()))
 
-            # 循环测试
-            while test_count > 0:
-                test_count -= 1
-
-                joint_status = robot.get_joint_status()
-                # logger.info("joint_status={0}".format(joint_status))
-
-                # 初始化全局配置文件
-                robot.init_profile()
-
-                # 设置关节最大加速度
-                # robot.set_joint_maxacc((5.5, 5.5, 5.5, 5.5, 5.5, 5.5))
-                #
-                # # 设置关节最大加速度
-                # robot.set_joint_maxvelc((1.5, .5, 2.5, 2.5, 2.5, 2.5))
-                # 设置关节最大加速度
-                robot.set_joint_maxacc((0.5, 0.5, 0.5, 0.5, 0.5, 0.5))
-
-                # 设置关节最大加速度
-                robot.set_joint_maxvelc((0.5, 0.5, 0.5, 0.5, 0.5, 0.5))
-                # 设置机械臂末端最大线加速度(m/s)
-                robot.set_end_max_line_acc(0.5)
-                logger.info("-------go-----to-----start-------step--01")
-                # 获取机械臂末端最大线加速度(m/s)
-                # robot.set_end_max_line_velc(0.2)
-                robot.set_end_max_line_velc(0.5)
-                
-                # joint_radian = deg_to_rad((6.9143,57.896,147.5397,93.8056,87.2035,10.226))#((0,0,0,0,0,0))
-                joint_radian = deg_to_rad((2.0469,66.6488,153.339,82.2410,87.786,-2.6249))#((0,0,0,0,0,0))
-
-                robot.move_joint(joint_radian)
 
 
+            joint_status = robot.get_joint_status()
+            # logger.info("joint_status={0}".format(joint_status))
+
+            # 初始化全局配置文件
+            robot.init_profile()
+
+            # 设置关节最大加速度
+            # robot.set_joint_maxacc((5.5, 5.5, 5.5, 5.5, 5.5, 5.5))
+            #
+            # # 设置关节最大加速度
+            # robot.set_joint_maxvelc((1.5, .5, 2.5, 2.5, 2.5, 2.5))
+            # 设置关节最大加速度
+            robot.set_joint_maxacc((0.5, 0.5, 0.5, 0.5, 0.5, 0.5))
+
+            # 设置关节最大加速度
+            robot.set_joint_maxvelc((0.5, 0.5, 0.5, 0.5, 0.5, 0.5))
+            # 设置机械臂末端最大线加速度(m/s)
+            robot.set_end_max_line_acc(0.5)
+            logger.info("-------go-----to-----start-------step--01")
+            # 获取机械臂末端最大线加速度(m/s)
+            # robot.set_end_max_line_velc(0.2)
+            robot.set_end_max_line_velc(0.5)
+            
+            ak47=Aubo_kinematics()
+            startpoint=[-85.72,-69.938,94.134,71.518,79.937,-1.1657]
+            # print(ak47.aubo_forward(startpoint))
+            BTE=ak47.aubo_forward(startpoint)
+            print("BTE",BTE)
+            tcptrans=(-0.181374,-0.939456,-0.544751)
+            Tnew=ak47.trans_2_tcp(tcptrans,BTE)
+            print("Tnew",Tnew)
+            ETcp=numpy.dot(numpy.matrix((BTE)).reshape((4,4)).I,numpy.matrix((Tnew)).reshape((4,4)))
+            # print(ETcp)
+            # print(ETcp.I)
+            # rpy = (149.38 / 180.0 * pi, 15.64/ 180.0 * pi, -43.91 / 180.0 * pi)
+            # print(rpy2r(rpy[0],rpy[1],rpy[2]).tolist())
+
+            Newtt=ak47.rpy_trans_2_new_T((-157.20 / 180.0 * pi, 3.9978/ 180.0 * pi, 6.908 / 180.0 * pi),(-0.181374,-0.939456,-0.544751))
+            print(Newtt)
+            EtB=numpy.dot(numpy.matrix((Newtt)).reshape((4,4)),ETcp.I)
+            print("---EtB---",ak47.martix_to_list(EtB.tolist()))
+            EtBnew=ak47.martix_to_list(EtB.tolist())
+            # print(ak47.degree_to_rad([-146.8159,-76.32,92.113,143.4119,94.116,-15.47]))
+            pjoint=ak47.GetInverseResult(EtBnew,ak47.degree_to_rad(startpoint))
+            print("test",tuple(pjoint))
+            robot.move_joint(tuple(pjoint))
             # 断开服务器链接
             robot.disconnect()
 
@@ -124,5 +143,5 @@ def main(test_count):
         logger.info("{0} test completed.".format(Auboi5Robot.get_local_time()))
 
 if __name__=="__main__":
-    main(1)
+    main()
     # print deg_to_rad((-3.3364,12.406,-81.09,-91.207,-86.08,0.164))

@@ -130,25 +130,6 @@ class MoveSmartEyeVisonControl():
         # 获取机械臂末端最大线加速度(m/s)
         # robot.set_end_max_line_velc(0.2)
         robot.set_end_max_line_velc(0.5)
-    def Aubo_forward_kinematics(self,robot,jointangular):
-        joint_radian = self.deg_to_rad(jointangular)
-        fk_ret = robot.forward_kin(joint_radian)
-        print("fk--------")
-        print(fk_ret)
-        return fk_ret
-    def Aubo_inverse_kinematics(self,robot,jointangular,newpose,neworientaion_Quaternion):
-        # 获取关节最大加速度
-        print(robot.get_joint_maxacc())
-        joint_radian = jointangular#self.deg_to_rad(jointangular)
-        print("pose and ori")
-        print(newpose)
-        print(neworientaion_Quaternion)
-        pos_test = newpose#(-0.5672477590258516, 0.51507448660946279, 0.57271770314023)  # the right
-        ori_test = neworientaion_Quaternion#(0.49380082661500474, 0.5110471735827042, -0.5086787259664434, -0.48604267688817565)
-        print("----ik----after--------")
-        ik_result = robot.inverse_kin(joint_radian, pos_test, ori_test)
-        print(ik_result)
-        return ik_result
     def Aubo_Line_trajectory(self,robot,start_point,End_point,):
         joint_radian = self.deg_to_rad(start_point)
         print("move joint to {0}".format(joint_radian))
@@ -161,55 +142,63 @@ class MoveSmartEyeVisonControl():
         joint_radian = self.deg_to_rad(jointAngular)
         print("move joint to {0}".format(joint_radian))
         robot.move_joint(joint_radian)
-    def transfer_2normal(self,normal_vector,trans_point):
+    def transfer_2normal(self,normal_vector):
         a=normal_vector[0]
         b=normal_vector[1]
         c=normal_vector[2]
-        theta=math.atan(c/a)
-        pha=math.acos(-b/math.sqrt(a*a+b*b+c*c))
-        Rxph=[1,0,0,0,math.cos(pha),-math.sin(pha),0,math.sin(pha),math.cos(pha)]
-        Rzthe=[math.cos(theta),-math.sin(theta),0,math.sin(theta),math.cos(theta),0,0,0,1]
-        nRc=numpy.dot(numpy.matrix(Rxph).reshape((3,3)),numpy.matrix(Rxph).reshape((3,3)))
-        print(Rxph)
-        print(Rzthe)
-        print(nRc)
-        nRc_list=nRc.tolist()
-        nRctemp=[]
-        reslist=[]
-        for i in range(len(nRc_list)):
-            for j in range(len(nRc_list[i])):
-                nRctemp.append(nRc_list[i][j])
-        for i in range(len(nRctemp)):
-            if i ==2:
-                reslist.append(nRctemp[i])
-                reslist.append(trans_point[0])
-            elif i==5:
-                reslist.append(nRctemp[i])
-                reslist.append(trans_point[1])
-            elif i==8:
-                reslist.append(nRctemp[i])
-                reslist.append(trans_point[2])
-            else:
-                reslist.append(nRctemp[i])
+        theta=math.atan2(c,a)
+        theta_p=math.atan2(a,c)
+        pha=math.acos(b/math.sqrt(a*a+b*b+c*c))
+        pha_p=math.asin(b/math.sqrt(a*a+b*b+c*c))
+        phanew =pi/2+pha#-pha_p #-(pi/2-pha_p)
+        newtheta = theta_p
+        Rxph=[1,0,0,
+        0,math.cos(phanew),-math.sin(phanew),
+        0,math.sin(phanew),math.cos(phanew)]
+        # Rzthe=[math.cos(theta),-math.sin(theta),0,math.sin(theta),math.cos(theta),0,0,0,1]
+        Rythe=[math.cos(newtheta),0,math.sin(newtheta),
+        0,1,0,-math.sin(newtheta),0,math.cos(newtheta)]
+        # Rx_pi_2=[1,0,0,0,math.cos(-pi/2),-math.sin(-pi/2),0,math.sin(-pi/2),math.cos(-pi/2)]
+        # nRc=numpy.dot(numpy.matrix(Rxph).reshape((3,3)),numpy.matrix(Rythe).reshape((3,3)))
+        nRc=numpy.dot(numpy.matrix(Rythe).reshape((3,3)),numpy.matrix(Rxph).reshape((3,3)))
+        # nRc=numpy.dot(numpy.matrix(Rx_pi_2).reshape((3,3)),numpy.dot(numpy.matrix(Rzthe).reshape((3,3)),numpy.matrix(Rxph).reshape((3,3))))
+        # print(Rxph)
+        # print(Rzthe)
+        print(numpy.dot(nRc,numpy.matrix([0,0,1]).reshape((3,1))))
+        print("abc",math.sin(theta)*math.sin(pha),math.cos(pha),math.cos(theta)*math.sin(pha))
+        print("normal_vector",normal_vector)
+        print("nRc",nRc)
+        return nRc
+        # nRc_list=nRc.tolist()
+        # nRctemp=[]
+        # reslist=[]
+        # for i in range(len(nRc_list)):
+        #     for j in range(len(nRc_list[i])):
+        #         nRctemp.append(nRc_list[i][j])
+        # for i in range(len(nRctemp)):
+        #     if i ==2:
+        #         reslist.append(nRctemp[i])
+        #         reslist.append(trans_point[0])
+        #     elif i==5:
+        #         reslist.append(nRctemp[i])
+        #         reslist.append(trans_point[1])
+        #     elif i==8:
+        #         reslist.append(nRctemp[i])
+        #         reslist.append(trans_point[2])
+        #     else:
+        #         reslist.append(nRctemp[i])
 
-        return reslist+[0,0,0,1]
-    def Get_bTp_from_SmartEye_WithOrientaion_In_Normal(self,normal_vector,point_data):#in Frame of camera
-        cTp=self.transfer_2normal(normal_vector,point_data)
-        return numpy.dot(numpy.matrix(self.SmartEye_bTc).reshape((4,4)),numpy.matrix(cTp).reshape((4,4)))
+        # return reslist+[0,0,0,1]
+    def Get_bTp_from_SmartEye_WithOrientaion_In_Normal(self,point_data):#in Frame of camera
+        return numpy.dot(numpy.matrix(self.SmartEye_bTc).reshape((4,4)),numpy.matrix(point_data+[1]).reshape((4,1)))
+        # cTp=self.transfer_2normal(normal_vector,[0,0,0])
+        # return numpy.dot(numpy.matrix(self.SmartEye_bTc).reshape((4,4)),numpy.matrix(cTp).reshape((4,1)))
     def Get_bTp_from_SmartEye(self,point_data):#in Frame of camera
         #point_data=[0,0,0,1]
         # point_data_temp=list(point_data).append(1)
         # print point_data_temp
         # print point_data+[1]
         return numpy.dot(numpy.matrix(self.SmartEye_bTc).reshape((4,4)),numpy.matrix(point_data+[1]).reshape((4,1)))
-    def caculate_eTcp_matrix_with_other_kienamatics(self,robot,jointangular,trans_bTcp):
-        """
-        jointangular:base on TCP point(deg)
-        trans_bTcp: from tcp to base translation
-        """
-        bTe=self.Aubo_forward_kinematics(robot,jointangular)
-        eTcp=numpy.dot(bTe.I,numpy.matrix(trans_bTcp).reshape((4,4)))
-        return eTcp
     def list_change_3_7_11(self,inital_list_data,list_data):
         temp=[]
         for i in range(len(inital_list_data)):
@@ -229,22 +218,41 @@ class MoveSmartEyeVisonControl():
         """
 
         bTe=self.aubo_my_kienamatics.aubo_forward(jointangular)
-        print("bTe",numpy.matrix(bTe).reshape((4,4)))
+        # print("bTe",numpy.matrix(bTe).reshape((4,4)))
         bTcp=self.list_change_3_7_11(bTe,trans_bTcp)
-        print("bTcp",numpy.matrix(bTcp).reshape((4,4)))
+        # print("bTcp",numpy.matrix(bTcp).reshape((4,4)))
         eTcp=numpy.dot(numpy.matrix(bTe).reshape((4,4)).I,numpy.matrix(bTcp).reshape((4,4)))
         return eTcp
-    def caculate_bTe_from_bTcp_matrix_with_my_kienamatics(self,point_data,eTcp,jointangular):
-        bTp=self.Get_bTp_from_SmartEye(point_data)#[4*1]
-        print("bTp",bTp.tolist())
-        list_data=bTp.tolist()
-        bTe=self.aubo_my_kienamatics.aubo_forward(jointangular)
+    def caculate_bTe_from_bTcp_matrix_with_my_kienamatics(self,nromal_vector,point_data,eTcp,jointangular):
 
-        bTcp_point=self.list_change_3_7_11(bTe,[list_data[0][0],list_data[1][0],list_data[2][0]])
+        bTp=self.Get_bTp_from_SmartEye_WithOrientaion_In_Normal(point_data)#self.Get_bTp_from_SmartEye(point_data)#[4*1]
+        print("bTp",bTp)
+        temp_bRc=[]
+        for i in range(len(self.SmartEye_bTc[:11])):
+            if i==3:
+                pass
+            elif i==7:
+                pass
+            elif i==11:
+                pass
+            else:
+                temp_bRc.append(self.SmartEye_bTc[i])
+        # print("numpy.matrix(temp_bRc).reshape((3,3))",numpy.matrix(temp_bRc).reshape((3,3)))
+        bRn=numpy.dot(numpy.matrix(temp_bRc).reshape((3,3)),self.transfer_2normal(nromal_vector))
+        row_last=numpy.matrix([0,0,0,1]).reshape((1,4))
+        newbrn=numpy.column_stack((bRn,bTp[:3]))
+        bTp_matrix=numpy.row_stack((newbrn,row_last))
+        print("bTp_matrix",bTp_matrix)
+        # list_data=bTp.tolist()
+        bTe=self.aubo_my_kienamatics.aubo_forward(jointangular)
+        print("bTe",bTe)
+
+        # bTcp_point=self.list_change_3_7_11(bTe,[list_data[0][0],list_data[1][0],list_data[2][0]])
         
-        print(bTcp_point)
-        bTe=numpy.dot(numpy.matrix(bTcp_point).reshape((4,4)),numpy.matrix(eTcp).reshape((4,4)).I)
-        
+        # print(bTcp_point)
+        bTe=numpy.dot(bTp_matrix,numpy.matrix(eTcp).reshape((4,4)).I)
+        print("bTe_new",bTe)
+        # print(self.array_to_list(bTe))
         return self.array_to_list(bTe)
     def array_to_list(self,list_data):
         list_data=list_data.tolist()
@@ -275,7 +283,8 @@ class MoveSmartEyeVisonControl():
         self.client_scoket.close()
 def main():
     
-    Point_data_1=[0.07149108,-0.1309188,1.040412]#1.033339]#[0.15765,-0.05829,0.9410576]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
+    Point_data_1=[-0.2263543,-0.2083322,0.9109188]#1.033339]#[0.15765,-0.05829,0.9410576]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
+    Normal_vector=[0.05177088,-0.04063817,-1]
     ratet=1
     Aub=MoveSmartEyeVisonControl()
     Aub.Init_node()
@@ -293,14 +302,12 @@ def main():
     while not rospy.is_shutdown():
 
         # Aub.Aubo_Move_to_Point(Robot,StartPoint)
-        # Aub.Aubo_forward_kinematics(Robot,StartPoint)
-    
-        bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
-        print("bTe_p1",bTe_p1)
+        bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Normal_vector,Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
+        # print("bTe_p1",bTe_p1)
         joint_p1_in_jointspace=Aub.get_joint_rad_from_inv(bTe_p1,Aub.yamlDic['StartPoint'])
         print(joint_p1_in_jointspace)
         print(Aub.rad_to_degree(joint_p1_in_jointspace))
-        print(Robot.forward_kin(Aub.rad_to_degree(joint_p1_in_jointspace)))
+        print(numpy.matrix(Aub.aubo_my_kienamatics.aubo_forward(Aub.rad_to_degree(joint_p1_in_jointspace))).reshape((4,4)))
         # Aub.tcp_connect_with_windows()
         # print(Aub.yamlDic)
         Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))

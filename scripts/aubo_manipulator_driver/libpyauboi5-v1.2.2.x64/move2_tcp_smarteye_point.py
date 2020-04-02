@@ -270,8 +270,15 @@ class MoveSmartEyeVisonControl():
         # returndata={}
         nums=re.findall(r'\d+(?:\.\d+)?', strdata)
         print("num---",nums)
-        returndata = {"x":float(nums[0]),"y":float(nums[1]),"z":float(nums[2]),"a":float(nums[3]),"b":float(nums[4]),"c":float(nums[5])}
+        returndata = {"x":float(nums[0]),"y":float(nums[1]),"z":float(nums[2]),"a":float(nums[3]),"b":float(nums[4]),"c":float(nums[5]),"d":float(nums[4])}
         return returndata
+    def transfer_2normal(self,a,b,c):
+        theta=math.atan(c/a)
+        pha=math.acos(b/math.sqrt(a^2+b^2+c^2))
+        Rxph=[1,0,0,0,math.cos(pha),-math.sin(pha),0,math.sin(pha),math.cos(pha)]
+        Rzthe=[math.cos(theta),-math.sin(theta),0,math.sin(theta),math.cos(theta),0,0,0,1]
+        cRn=numpy.dot(numpy.matrix(Rxph).reshape((3,3)),numpy.matrix(Rxph).reshape((3,3)))
+        
 def main():
     
 
