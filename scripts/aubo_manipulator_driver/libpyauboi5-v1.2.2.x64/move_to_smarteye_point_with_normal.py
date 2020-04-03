@@ -282,9 +282,10 @@ class MoveSmartEyeVisonControl():
     def close_client_socket(self,):
         self.client_scoket.close()
 def main():
-    
-    Point_data_1=[-0.2263543,-0.2083322,0.9109188]#1.033339]#[0.15765,-0.05829,0.9410576]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
-    Normal_vector=[0.05177088,-0.04063817,-1]
+    #'a': 0.01608961, 'c': -1.0, 'b': -0.05539377, 'y': -0.1154113, 'x': -0.1837161, 'z': 0.8386224
+ 
+    Point_data_1=[-0.1829874,-0.1161011,0.8385423+0.1]
+    Normal_vector=[0.009838227,-0.04309265,-1]
     ratet=1
     Aub=MoveSmartEyeVisonControl()
     Aub.Init_node()
@@ -310,7 +311,7 @@ def main():
         print(numpy.matrix(Aub.aubo_my_kienamatics.aubo_forward(Aub.rad_to_degree(joint_p1_in_jointspace))).reshape((4,4)))
         # Aub.tcp_connect_with_windows()
         # print(Aub.yamlDic)
-        Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
+        # Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
         rate.sleep()
     # except:
     #     pass

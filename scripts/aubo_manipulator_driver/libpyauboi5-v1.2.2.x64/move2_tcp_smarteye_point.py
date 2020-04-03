@@ -7,7 +7,7 @@ from aubo_robotcontrol import *
 import time
 import numpy
 import os
-from aubo_kienamtics import *
+from aubo_kienamatics import *
 import yaml
 import socket
 import threading
@@ -64,7 +64,7 @@ class MoveSmartEyeVisonControl():
             #here we need to a flag to open this function
             if int(output):
                 socket_info.send("S1".encode('utf-8'))
-                # time.sleep(20)
+                # time.sleep(1)
                 count+=1
                 print("go to next point %d",count)
             else:
@@ -184,7 +184,8 @@ class MoveSmartEyeVisonControl():
         joint_radian = self.deg_to_rad(End_point)
         print("move joint to {0}".format(joint_radian))
         robot.move_line(joint_radian)
-
+    def Get_bTp_from_SmartEye_WithOrientaion_In_Normal(self,point_data):#in Frame of camera
+        return numpy.dot(numpy.matrix(self.SmartEye_bTc).reshape((4,4)),numpy.matrix(point_data+[1]).reshape((4,1)))
     def Aubo_Move_to_Point(self,robot,jointAngular):
         joint_radian = self.deg_to_rad(jointAngular)
         print("move joint to {0}".format(joint_radian))
@@ -215,6 +216,33 @@ class MoveSmartEyeVisonControl():
             else:
                 temp.append(inital_list_data[i])
         return temp
+    def transfer_2normal(self,normal_vector):
+        a=normal_vector[0]
+        b=normal_vector[1]
+        c=normal_vector[2]
+        theta=math.atan2(c,a)
+        theta_p=math.atan2(a,c)
+        pha=math.acos(b/math.sqrt(a*a+b*b+c*c))
+        pha_p=math.asin(b/math.sqrt(a*a+b*b+c*c))
+        phanew =pi/2+pha#-pha_p #-(pi/2-pha_p)
+        newtheta = theta_p
+        Rxph=[1,0,0,
+        0,math.cos(phanew),-math.sin(phanew),
+        0,math.sin(phanew),math.cos(phanew)]
+        # Rzthe=[math.cos(theta),-math.sin(theta),0,math.sin(theta),math.cos(theta),0,0,0,1]
+        Rythe=[math.cos(newtheta),0,math.sin(newtheta),
+        0,1,0,-math.sin(newtheta),0,math.cos(newtheta)]
+        # Rx_pi_2=[1,0,0,0,math.cos(-pi/2),-math.sin(-pi/2),0,math.sin(-pi/2),math.cos(-pi/2)]
+        # nRc=numpy.dot(numpy.matrix(Rxph).reshape((3,3)),numpy.matrix(Rythe).reshape((3,3)))
+        nRc=numpy.dot(numpy.matrix(Rythe).reshape((3,3)),numpy.matrix(Rxph).reshape((3,3)))
+        # nRc=numpy.dot(numpy.matrix(Rx_pi_2).reshape((3,3)),numpy.dot(numpy.matrix(Rzthe).reshape((3,3)),numpy.matrix(Rxph).reshape((3,3))))
+        # print(Rxph)
+        # print(Rzthe)
+        print(numpy.dot(nRc,numpy.matrix([0,0,1]).reshape((3,1))))
+        print("abc",math.sin(theta)*math.sin(pha),math.cos(pha),math.cos(theta)*math.sin(pha))
+        print("normal_vector",normal_vector)
+        print("nRc",nRc)
+        return nRc
     def caculate_eTcp_matrix_with_my_kienamatics(self,jointangular,trans_bTcp):
         """
         jointangular:base on TCP point(deg)
@@ -227,17 +255,36 @@ class MoveSmartEyeVisonControl():
         # print("bTcp",numpy.matrix(bTcp).reshape((4,4)))
         eTcp=numpy.dot(numpy.matrix(bTe).reshape((4,4)).I,numpy.matrix(bTcp).reshape((4,4)))
         return eTcp
-    def caculate_bTe_from_bTcp_matrix_with_my_kienamatics(self,point_data,eTcp,jointangular):
-        bTp=self.Get_bTp_from_SmartEye(point_data)#[4*1]
-        # print bTp.tolist()
-        list_data=bTp.tolist()
+    def caculate_bTe_from_bTcp_matrix_with_my_kienamatics(self,nromal_vector,point_data,eTcp,jointangular):
+
+        bTp=self.Get_bTp_from_SmartEye_WithOrientaion_In_Normal(point_data)#self.Get_bTp_from_SmartEye(point_data)#[4*1]
+        print("bTp",bTp)
+        temp_bRc=[]
+        for i in range(len(self.SmartEye_bTc[:11])):
+            if i==3:
+                pass
+            elif i==7:
+                pass
+            elif i==11:
+                pass
+            else:
+                temp_bRc.append(self.SmartEye_bTc[i])
+        # print("numpy.matrix(temp_bRc).reshape((3,3))",numpy.matrix(temp_bRc).reshape((3,3)))
+        bRn=numpy.dot(numpy.matrix(temp_bRc).reshape((3,3)),self.transfer_2normal(nromal_vector))
+        row_last=numpy.matrix([0,0,0,1]).reshape((1,4))
+        newbrn=numpy.column_stack((bRn,bTp[:3]))
+        bTp_matrix=numpy.row_stack((newbrn,row_last))
+        print("bTp_matrix",bTp_matrix)
+        # list_data=bTp.tolist()
         bTe=self.aubo_my_kienamatics.aubo_forward(jointangular)
-        # print("self.EE_TCP_DIS]",self.EE_TCP_DIS,list_data[2][0])
-        bTcp_point=self.list_change_3_7_11(bTe,[list_data[0][0],list_data[1][0],list_data[2][0]])#here minus tcp to polishing tools
+        print("bTe",bTe)
+
+        # bTcp_point=self.list_change_3_7_11(bTe,[list_data[0][0],list_data[1][0],list_data[2][0]])
         
-        print(bTcp_point)
-        bTe=numpy.dot(numpy.matrix(bTcp_point).reshape((4,4)),numpy.matrix(eTcp).reshape((4,4)).I)
-        
+        # print(bTcp_point)
+        bTe=numpy.dot(bTp_matrix,numpy.matrix(eTcp).reshape((4,4)).I)
+        print("bTe_new",bTe)
+        # print(self.array_to_list(bTe))
         return self.array_to_list(bTe)
     def array_to_list(self,list_data):
         list_data=list_data.tolist()
@@ -272,15 +319,9 @@ class MoveSmartEyeVisonControl():
         print("num---",nums)
         returndata = {"x":float(nums[0]),"y":float(nums[1]),"z":float(nums[2]),"a":float(nums[3]),"b":float(nums[4]),"c":float(nums[5]),"d":float(nums[4])}
         return returndata
-    def transfer_2normal(self,a,b,c):
-        theta=math.atan(c/a)
-        pha=math.acos(b/math.sqrt(a^2+b^2+c^2))
-        Rxph=[1,0,0,0,math.cos(pha),-math.sin(pha),0,math.sin(pha),math.cos(pha)]
-        Rzthe=[math.cos(theta),-math.sin(theta),0,math.sin(theta),math.cos(theta),0,0,0,1]
-        cRn=numpy.dot(numpy.matrix(Rxph).reshape((3,3)),numpy.matrix(Rxph).reshape((3,3)))
-        
+
+
 def main():
-    
 
     Point_data_1=[0.09538765,-0.09967687,0.8083981]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
     ratet=1
@@ -288,7 +329,7 @@ def main():
     Aub.Init_node()
     rate = rospy.Rate(ratet)
     #相机向下是y,左相机为主为x，光轴为Z
-    eTcp=Aub.caculate_eTcp_matrix_with_my_kienamatics(Aub.yamlDic['StartPoint'],Aub.yamlDic['StartPointXYZ_IN_EE'])
+    eTcp=Aub.caculate_eTcp_matrix_with_my_kienamatics(Aub.yamlDic['StartPoint'],Aub.yamlDic['StartPointXYZ_IN_TCP'])
     # print numpy.matrix(eTcp).reshape((4,4))
 
     try:
@@ -313,27 +354,40 @@ def main():
     except:
         rospy.loginfo("init connect with smarteye windows version not OK")
     # try:
+    flag_opn=0
     while not rospy.is_shutdown():
 
-        # Aub.Aubo_Move_to_Point(Robot,StartPoint)
-        # Aub.Aubo_forward_kinematics(Robot,StartPoint)
-    
-        # bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
-        # joint_p1_in_jointspace=Aub.get_joint_rad_from_inv(bTe_p1,Aub.yamlDic['StartPoint'])
-        # print Aub.rad_to_degree(joint_p1_in_jointspace)
         aubo_back_initial_flag = rospy.get_param("aubo_back_initial_flag")#USe for open camera
+        if flag_opn==0:
+            print("open camera ----")
+            os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
+            time.sleep(0.05)
+            # os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
+            os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
+            time.sleep(5)
+            flag_opn=1
         if len(Aub.camera_dict)!=0:
             print("Aub.camera_dict",Aub.camera_dict)
             Point_data_1=[Aub.camera_dict['x'],Aub.camera_dict['y'],Aub.camera_dict['z']+Aub.EE_TCP_DIS]
+            Normal_vector=[Aub.camera_dict['a'],Aub.camera_dict['b'],Aub.camera_dict['c']]
+            bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Normal_vector,Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
             print("Point_data_1",Point_data_1)
-            # Point_data_1=[0.023553,-0.029475,0.954204]#[-0.037234,-0.02911256,0.7087903]#[0.017991,-0.0300379,0.952594+Aub.EE_TCP_DIS]
-            bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
+
             joint_p1_in_jointspace=Aub.get_joint_rad_from_inv(bTe_p1,Aub.yamlDic['StartPoint'])
             print(Aub.rad_to_degree(joint_p1_in_jointspace))
-            if aubo_back_initial_flag==0:
-                Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
-            else:
-                Aub.Aubo_Move_to_Point(Robot,Aub.yamlDic['StartPoint'])
+            Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
+            time.sleep(6)
+            print("go back---initial---")
+            Aub.Aubo_Move_to_Point(Robot,Aub.yamlDic['StartPoint'])
+            time.sleep(7)
+            os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
+            print("opreating camrea----")
+            flag_opn=0
+            # if aubo_back_initial_flag==0:
+            #     Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
+            #     # pass
+            # else:
+            #     Aub.Aubo_Move_to_Point(Robot,Aub.yamlDic['StartPoint'])
         
         rate.sleep()
     # except:
