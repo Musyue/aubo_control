@@ -59,7 +59,7 @@ class MoveSmartEyeVisonControl():
         while True:
             status,output=commands.getstatusoutput("rosparam get /move2_camera_ns/send_s1_flag")
             # send_s1_flag = rospy.get_param("send_s1_flag")#USe for open camera
-            print(output)
+            # print(output)
             # print("send_s1_flag---:%d",send_s1_flag)
             #here we need to a flag to open this function
             if int(output):
@@ -68,7 +68,8 @@ class MoveSmartEyeVisonControl():
                 count+=1
                 print("go to next point %d",count)
             else:
-                print("waiting next camera opreating--")
+                # print("waiting next camera opreating--")
+                pass
     def Init_aubo_driver(self):
         # 初始化logger
         #logger_init()
@@ -317,7 +318,7 @@ class MoveSmartEyeVisonControl():
         # returndata={}
         nums=re.findall(r'\d+(?:\.\d+)?', strdata)
         print("num---",nums)
-        returndata = {"x":float(nums[0]),"y":float(nums[1]),"z":float(nums[2]),"a":float(nums[3]),"b":float(nums[4]),"c":float(nums[5]),"d":float(nums[4])}
+        returndata = {"x":float(nums[0]),"y":float(nums[1]),"z":float(nums[2]),"a":float(nums[3]),"b":float(nums[4]),"c":float(nums[5]),"d":float(nums[6]),"height":float(nums[7])}
         return returndata
 
 
@@ -360,10 +361,12 @@ def main():
         aubo_back_initial_flag = rospy.get_param("aubo_back_initial_flag")#USe for open camera
         if flag_opn==0:
             print("open camera ----")
+            os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
             os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
-            time.sleep(0.05)
+            os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
             # os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
             os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
+            #  time.sleep(0.05)
             time.sleep(5)
             flag_opn=1
         if len(Aub.camera_dict)!=0:
@@ -379,10 +382,11 @@ def main():
             time.sleep(6)
             print("go back---initial---")
             Aub.Aubo_Move_to_Point(Robot,Aub.yamlDic['StartPoint'])
-            time.sleep(7)
+            time.sleep(5)
             os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
-            print("opreating camrea----")
+            print("close camrea----")
             flag_opn=0
+            # Aub.camera_dict={}
             # if aubo_back_initial_flag==0:
             #     Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
             #     # pass
