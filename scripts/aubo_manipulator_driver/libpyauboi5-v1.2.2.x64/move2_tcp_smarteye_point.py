@@ -424,17 +424,17 @@ def main():
     flag_open_goback=0
     while not rospy.is_shutdown():
 
-        aubo_back_initial_flag = rospy.get_param("aubo_back_initial_flag")#USe for open camera
-        if flag_opn==0:
-            print("open camera ----")
-            os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
-            os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
-            os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
-            # os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
-            os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
-            #  time.sleep(0.05)
-            time.sleep(5)
-            flag_opn=1
+        # aubo_back_initial_flag = rospy.get_param("aubo_back_initial_flag")#USe for open camera
+        # if flag_opn==0:
+        #     print("open camera ----")
+        #     os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
+        #     os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
+        #     os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
+        #     # os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
+        #     os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
+        #     #  time.sleep(0.05)
+        #     time.sleep(5)
+        #     flag_opn=1
         if len(Aub.camera_dict)!=0:
             os.system("rosparam set /move2_camera_ns/polishing_over_flag 0")
             print("Aub.camera_dict",Aub.camera_dict)
@@ -461,7 +461,7 @@ def main():
 
                 os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
                 print("close camrea----")
-                flag_opn=0
+                # flag_opn=0
                 Aub.camera_dict={}
                 # if aubo_back_initial_flag==0:
                 #     Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
