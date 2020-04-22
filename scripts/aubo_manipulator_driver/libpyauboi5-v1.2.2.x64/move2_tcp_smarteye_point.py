@@ -462,6 +462,7 @@ def main():
                 os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
                 print("close camrea----")
                 # flag_opn=0
+                height_deta=0
                 Aub.camera_dict={}
                 # if aubo_back_initial_flag==0:
                 #     Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
