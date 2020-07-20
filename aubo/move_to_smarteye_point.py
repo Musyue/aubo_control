@@ -12,7 +12,7 @@ from aubo_kienamatics import *
 import yaml
 class MoveSmartEyeVisonControl():
     def __init__(self):
-        self.configname='/data/ros/code/test_ws/src/aubo_control/config/camera_aubo_config.yaml'
+        self.configname='/data/ros/yue_ws/src/aubo_control/config/camera_aubo_config.yaml'
         self.yamlDic=None
         self.Opreating_yaml()
         self.SmartEye_bTc=self.yamlDic['TBC']
@@ -275,7 +275,7 @@ class MoveSmartEyeVisonControl():
         self.client_scoket.close()
 def main():
     
-    Point_data_1=[0.07149108,-0.1309188,1.040412]#1.033339]#[0.15765,-0.05829,0.9410576]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
+    Point_data_1=[-0.189053, 0.105400, 0.947164]#[0.07149108,-0.1309188,1.040412]#1.033339]#[0.15765,-0.05829,0.9410576]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
     ratet=1
     Aub=MoveSmartEyeVisonControl()
     Aub.Init_node()

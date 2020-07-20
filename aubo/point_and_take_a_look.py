@@ -101,48 +101,87 @@ def main(test_count):
                 # robot.set_end_max_line_velc(0.2)
                 robot.set_end_max_line_velc(0.5)
                 
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(3)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                t_save=10
+                time.sleep(3)
 
                 joint_radian = deg_to_rad((23.33,59.92,153.939,90.712,69.41,1.07))#((0,0,0,0,0,0))#开始right0
                 robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
+                time.sleep(4)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(3)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #1
                 joint_radian = deg_to_rad((102.668,1.7223,142.53,139.6822,-9.2608,-0.687))#left1
                 robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
+                time.sleep(4)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #2
+
                 joint_radian = deg_to_rad((93.004,-31.334,156.41,97.04,1.47,91.056))#left2
                 robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
-                joint_radian = deg_to_rad((90.79,82.13,146.1558,133.0358,-0.3238,110.739))#right1
-                robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
-                joint_radian = deg_to_rad((96.1967,7.31,-144.93,45.29,-1.429,-18.664))#right2
-                robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
-                joint_radian = deg_to_rad((93.782,68.15,-130.93,26.358,-5.0317,-47.545))#right3
-                robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
-                joint_radian = deg_to_rad((103.392,114.308,-81.4896,133.593,-7.04969,-151.7972))#right4
-                robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
+                time.sleep(4)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #3
+
                 joint_radian = deg_to_rad((96.16,-33.616,163.94,95.046,-2.4067,-78.19622))#left3
                 robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
+                time.sleep(3)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #4
+
                 joint_radian = deg_to_rad((90.00,-77.0939,135.78,107.825,-2.406,-78.195))#left4
                 robot.move_joint(joint_radian)
-                time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
+                time.sleep(4)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #5
+
                 joint_radian = deg_to_rad((85.611,-106.7425,104.4639,105.769,-2.400,-73.97553))#left5
                 robot.move_joint(joint_radian)
-
                 time.sleep(5)
-                os.system("rosparam set /open_camera_flag 1")
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #6
+
+                joint_radian = deg_to_rad((90.79,82.13,146.1558,133.0358,-0.3238,110.739))#right1
+                robot.move_joint(joint_radian)
+                time.sleep(4)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #7
+
+                joint_radian = deg_to_rad((96.1967,7.31,-144.93,45.29,-1.429,-18.664))#right2
+                robot.move_joint(joint_radian)
+                time.sleep(4)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #8
+
+                joint_radian = deg_to_rad((93.782,68.15,-130.93,26.358,-5.0317,-47.545))#right3
+                robot.move_joint(joint_radian)
+                time.sleep(4)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #9
+
+                joint_radian = deg_to_rad((103.392,114.308,-81.4896,133.593,-7.04969,-151.7972))#right4
+                robot.move_joint(joint_radian)
+                time.sleep(4)
+                os.system("rosparam set /smarteye_ros_demo/open_camera_flag 1")
+                time.sleep(t_save)
+                #10
+
+
+                #back to initial
+                joint_radian = deg_to_rad((23.33,59.92,153.939,90.712,69.41,1.07))#((0,0,0,0,0,0))#开始right0
+                robot.move_joint(joint_radian)
             # 断开服务器链接
             robot.disconnect()
 
