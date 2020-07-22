@@ -15,19 +15,20 @@ import commands
 import re
 class MoveSmartEyeVisonControl():
     def __init__(self):
-        self.configname='/data/ros/code/test_ws/src/aubo_control/config/camera_aubo_config.yaml'
+        self.configname='/data/ros/yue_ws/src/aubo_control/config/camera_aubo_config.yaml'
         self.yamlDic=None
         self.Opreating_yaml()
         self.SmartEye_bTc=self.yamlDic['TBC']
         self.EE_TCP_DIS=self.yamlDic['EE_DIS_TCP']
+        self.start_point=self.yamlDic['StartPoint']
         self.aubo_my_kienamatics=Aubo_kinematics()
         self.camera_data=[]
         self.camera_dict={}
         # self.send_s1_flag = rospy.get_param("send_s1_flag")#USe for open camera
         
         self.Aubo_IP=self.yamlDic['AuboIP']
-        self.maxacctuple=tuple(self.yamlDic['Aubomaxacctuple'])
-        self.maxvelctuple=tuple(self.yamlDic['Aubomaxvelctuple'])
+        self.maxacctuple=tuple(self.yamlDic['Aubominacctuple'])
+        self.maxvelctuple=tuple(self.yamlDic['Aubominvelctuple'])
         self.cont=30
     def Init_node(self):
         rospy.init_node("aubo_smart_eye")
@@ -100,7 +101,7 @@ class MoveSmartEyeVisonControl():
                 #robot.robot_startup()
                 #
                 # # 设置碰撞等级
-                robot.set_collision_class(2)
+                robot.set_collision_class(6)
 
                 # 设置工具端电源为１２ｖ
                 # robot.set_tool_power_type(RobotToolPowerType.OUT_12V)
@@ -199,25 +200,30 @@ class MoveSmartEyeVisonControl():
 
         # 获取机械臂末端最大线加速度(m/s)
         # robot.set_end_max_line_velc(0.2)
-        robot.set_end_max_line_velc(0.2)
+        robot.set_end_max_line_velc(0.1)
+        robot.set_joint_maxacc(self.maxacctuple)#(2.5, 2.5, 2.5, 2.5, 2.5, 2.5)
 
+        # 设置关节最大加速度
+        robot.set_joint_maxvelc(self.maxvelctuple)#(1.5, 1.5, 1.5, 1.5, 1.5, 1.5)
         # 清除所有已经设置的全局路点
         robot.remove_all_waypoint()
         joint_radian =self.deg_to_rad(joint_angular_first)
         robot.add_waypoint(joint_radian)
         # 添加全局路点1,用于轨迹运动
         for i in range(len(q_list_rad)):
-            robot.add_waypoint(tuple(q_list_rad[i]))
+            robot.move_joint(q_list_rad[i])
+            # time.sleep(10)
+            # robot.add_waypoint(tuple(q_list_rad[i]))
 
         # 设置圆运动圈数
-        robot.set_circular_loop_times(1)
+        # robot.set_circular_loop_times(1)
 
         # 圆弧运动
-        rospy.loginfo("move_track ARC_CIR")
-        robot.move_track(RobotMoveTrackType.ARC_CIR)
+        # rospy.loginfo("move_track ARC_CIR")
+        # robot.move_track(RobotMoveTrackType.ARC_CIR)
 
         # 清除所有已经设置的全局路点
-        robot.remove_all_waypoint()
+        # robot.remove_all_waypoint()
     def Get_bTp_from_SmartEye(self,point_data):#in Frame of camera
         #point_data=[0,0,0,1]
         # point_data_temp=list(point_data).append(1)
@@ -308,13 +314,15 @@ class MoveSmartEyeVisonControl():
         return New_T_res
     def get_circle_q_list(self,num,joint_rad,radius):
         all_new_t=self.draw_circle_from_joint(num,joint_rad,radius)
-        # rospy.loginfo(all_new_t)
+        rospy.loginfo(joint_rad)
         q_list=[]
         for i in range(len(all_new_t)):
-            q_list.append(self.aubo_my_kienamatics.GetInverseResult(all_new_t[i],joint_rad))
+            if self.aubo_my_kienamatics.GetInverseResult(all_new_t[i],joint_rad)!=None:
+                q_list.append(self.aubo_my_kienamatics.GetInverseResult(all_new_t[i],joint_rad))
         return q_list
     def move_circle_aubo(self,robot,num,joint_rad,radius):
         q_list=self.get_circle_q_list(num,joint_rad,radius)
+        print(q_list)
         # for i in range(len(q_list)):
         self.Aubo_move_track(robot,q_list,self.rad_to_degree(joint_rad))
         # self.Aubo_Move_to_Point(robot,self.rad_to_degree(q_list[i]))
@@ -403,72 +411,20 @@ def main():
     except:
         rospy.loginfo("init aubo not OK")
     try:
-        tcp_socket_host = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        tcp_socket_host.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,True)
-        tcp_socket_host.bind(('',8090))
-        tcp_socket_host.listen(128)
-        socket_info,addr_client=tcp_socket_host.accept()
-        print(socket_info)
-        print(addr_client)
-
-        t1=threading.Thread(target=Aub.socket_read,args=(socket_info,))
-        t2=threading.Thread(target=Aub.socket_write,args=(socket_info,))
-        t1.start()
-        t2.start()
-        rospy.loginfo("init connect with smarteye windows version OK")
+        Aub.move_circle_aubo(Robot,30,Aub.deg_to_rad(Aub.start_point),0.4)
     except:
-        rospy.loginfo("init connect with smarteye windows version not OK")
-    # try:
-    flag_opn=0
-    height_deta=0
-    flag_open_goback=0
+        pass
     while not rospy.is_shutdown():
+        print("Nothing")
+        # try:
+        #     Aub.move_circle_aubo(Robot,30,Aub.deg_to_rad(Aub.start_point),0.5)
+        # except:
+        #     pass
 
-        # aubo_back_initial_flag = rospy.get_param("aubo_back_initial_flag")#USe for open camera
-        # if flag_opn==0:
-        #     print("open camera ----")
-        #     os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
-        #     os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
-        #     os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
-        #     # os.system("rosparam set /move2_camera_ns/send_s1_flag 1")
-        #     os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
-        #     #  time.sleep(0.05)
-        #     time.sleep(5)
-        #     flag_opn=1
-        if len(Aub.camera_dict)!=0:
-            os.system("rosparam set /move2_camera_ns/polishing_over_flag 0")
-            print("Aub.camera_dict",Aub.camera_dict)
-            if height_deta>=0 and height_deta<=Aub.camera_dict['height']:
-                Point_data_1=[Aub.camera_dict['x'],Aub.camera_dict['y'],Aub.camera_dict['z']+Aub.EE_TCP_DIS+height_deta-0.004]
-                Normal_vector=[Aub.camera_dict['a'],Aub.camera_dict['b'],Aub.camera_dict['c']]
-                bTe_p1=Aub.caculate_bTe_from_bTcp_matrix_with_my_kienamatics(Normal_vector,Point_data_1,eTcp,Aub.yamlDic['StartPoint'])
-                print("Point_data_1",Point_data_1)
+        # Aub.Aubo_Move_to_Point(Robot,Aub.yamlDic['StartPoint'])
 
-                joint_p1_in_jointspace=Aub.get_joint_rad_from_inv(bTe_p1,Aub.yamlDic['StartPoint'])
-                print(Aub.rad_to_degree(joint_p1_in_jointspace))
-                print(joint_p1_in_jointspace)
-                # Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
-                # time.sleep(2)
 
-                Aub.move_circle_aubo(Robot,30,joint_p1_in_jointspace,0.05)
-                height_deta+=0.002
-                rospy.loginfo("height_deta------%s",str(height_deta))
-            if height_deta>Aub.camera_dict['height']:
-                os.system("rosparam set /move2_camera_ns/polishing_over_flag 1")
-                # time.sleep(5)
-                print("go back---initial---")
-                Aub.Aubo_Move_to_Point(Robot,Aub.yamlDic['StartPoint'])
 
-                os.system("rosparam set /move2_camera_ns/send_s1_flag 0")
-                print("close camrea----")
-                # flag_opn=0
-                height_deta=0
-                Aub.camera_dict={}
-                # if aubo_back_initial_flag==0:
-                #     Aub.Aubo_Move_to_Point(Robot,Aub.rad_to_degree(joint_p1_in_jointspace))
-                #     # pass
-                # else:
-                #     Aub.Aubo_Move_to_Point(Robot,Aub.yamlDic['StartPoint'])
                 
         
         rate.sleep()

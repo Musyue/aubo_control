@@ -89,6 +89,10 @@ def main(test_count):
                 # # 设置关节最大加速度
                 # robot.set_joint_maxvelc((1.5, .5, 2.5, 2.5, 2.5, 2.5))
                 # 设置关节最大加速度
+                # robot.set_joint_maxacc((0.05, 0.05, 0.05, 0.05, 0.05, 0.05))
+
+                # # 设置关节最大加速度
+                # robot.set_joint_maxvelc((0.05, 0.05, 0.05, 0.05, 0.05, 0.05))
                 robot.set_joint_maxacc((0.5, 0.5, 0.5, 0.5, 0.5, 0.5))
 
                 # 设置关节最大加速度
@@ -105,14 +109,15 @@ def main(test_count):
                 # joint_radian = deg_to_rad((102.668,1.7223,142.53,139.6822,-9.2608,-0.687))#left1
 
                 # joint_radian = deg_to_rad((93.004,-31.334,156.41,97.04,1.47,91.056))#left2
+
+                # joint_radian = deg_to_rad((96.16,-33.616,163.94,95.046,-2.4067,-78.19622))#left3
+                # joint_radian = deg_to_rad((90.00,-77.0939,135.78,107.825,-2.406,-78.195))#left4
+                # joint_radian = deg_to_rad((85.611,-106.7425,104.4639,105.769,-2.400,-73.97553))#left5
                 # joint_radian = deg_to_rad((90.79,82.13,146.1558,133.0358,-0.3238,110.739))#right1
                 # joint_radian = deg_to_rad((96.1967,7.31,-144.93,45.29,-1.429,-18.664))#right2
                 # joint_radian = deg_to_rad((93.782,68.15,-130.93,26.358,-5.0317,-47.545))#right3
                 # joint_radian = deg_to_rad((103.392,114.308,-81.4896,133.593,-7.04969,-151.7972))#right4
-                # joint_radian = deg_to_rad((96.16,-33.616,163.94,95.046,-2.4067,-78.19622))#left3
-                # joint_radian = deg_to_rad((90.00,-77.0939,135.78,107.825,-2.406,-78.195))#left4
-                # joint_radian = deg_to_rad((85.611,-106.7425,104.4639,105.769,-2.400,-73.97553))#left5
-               
+
                 robot.move_joint(joint_radian)
 
 

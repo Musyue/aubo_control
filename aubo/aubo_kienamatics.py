@@ -160,7 +160,7 @@ class Aubo_kinematics():
         q_reslut_dic={}
         q_reslut=[]
         singularity = False
-
+        # print(T)
         num_sols = 0
         nx = T[0]
         ox = T[1]
@@ -175,17 +175,17 @@ class Aubo_kinematics():
         oz = T[9] 
         az = T[10] 
         pz = T[11]
-
+        
         # //////////////////////// shoulder rotate joint (q1) //////////////////////////////
         q1=[0,0]
 
         A1 = self.d6 * ay - py
         B1 = self.d6 * ax - px
         R1 = A1 * A1 + B1 * B1 - self.d2 * self.d2
-
+        # print(R1)
 
         if R1 < 0.0:
-            return num_sols
+            return {},num_sols
         else:
             R12 = sqrt(R1)
             q1[0] =  self.antiSinCos(A1, B1) -  self.antiSinCos(self.d2, R12)
@@ -196,9 +196,10 @@ class Aubo_kinematics():
                     q1[i] -= 2 * pi
                 while q1[i] < -pi:
                     q1[i] += 2 * pi
+        # print("wocao")
             
         
-
+        # print(num_sols)
         #////////////////////////////// wrist 2 joint (q5) //////////////////////////////
         q5=[[0,0],[0,0]]
 
@@ -237,7 +238,7 @@ class Aubo_kinematics():
                 B6 = (ny * C1 - nx * S1)
 
                 if fabs(S5) < self.ZERO_THRESH:# //the condition is only dependent on q1
-                
+                    # print("wowo")
                     singularity = True
                     break
                 else:
@@ -285,8 +286,10 @@ class Aubo_kinematics():
                     q_reslut=[q1[i],q2[k],q3[k],q4[k],q5[i][j],q6]
 
                     q_reslut_dic.update({num_sols:q_reslut})
+                    # print(q_reslut)
                     num_sols+=1
-                
+        # print("wowowowowo",q_reslut_dic,num_sols)       
+        # return q_reslut_dic
         return q_reslut_dic,num_sols
         """
         The Frobenius norm, sometimes also called the Euclidean norm (a term unfortunately also used for the vector L^2-norm), 
@@ -384,8 +387,10 @@ class Aubo_kinematics():
         AngleLimit = [(-maxq,maxq),(-maxq,maxq),(-maxq,maxq),(-maxq,maxq),(-maxq,maxq),(-maxq,maxq)]
 
         #inverse and remove zero list
-        q_sols_all,num_sols = self.aubo_inverse(T_target)
+        # print(T_target)
         
+        q_sols_all,num_sols = self.aubo_inverse(T_target)
+        # q_sols_all = self.aubo_inverse(T_target)
         if(len(q_sols_all) != 0):
             # for i in q_sols_all:
                 # print("num:"+str(i)+' '+"sols",q_sols_all[i])
