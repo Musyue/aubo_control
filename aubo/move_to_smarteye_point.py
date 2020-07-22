@@ -273,6 +273,17 @@ class MoveSmartEyeVisonControl():
         self.tcp_socket.close()
     def close_client_socket(self,):
         self.client_scoket.close()
+    def caculate_eTc_matrix_with_my_kienamatics(self,jointangular):
+        """
+        jointangular:base on TCP point(deg)
+        bTc: from camera to base T matrix
+        """
+
+        bTe=self.aubo_my_kienamatics.aubo_forward(jointangular)
+        print("bTe",numpy.matrix(bTe).reshape((4,4)))
+
+        eTc=numpy.dot(numpy.matrix(self.SmartEye_bTc).reshape((4,4)).I,numpy.matrix(bTe).reshape((4,4)))
+        return eTc
 def main():
     
     Point_data_1=[-0.189053, 0.105400, 0.947164]#[0.07149108,-0.1309188,1.040412]#1.033339]#[0.15765,-0.05829,0.9410576]#[-0.239463,-0.0300859,0.983125]#[0.131,-0.242,0.903]#[0.119,-0.116,1.003]
@@ -283,7 +294,8 @@ def main():
     #相机向下是y,左相机为主为x，光轴为Z
     eTcp=Aub.caculate_eTcp_matrix_with_my_kienamatics(Aub.yamlDic['StartPoint'],Aub.yamlDic['StartPointXYZ_IN_TCP'])
     print("eTcp",numpy.matrix(eTcp).reshape((4,4)))
-
+    eTc=Aub.caculate_eTc_matrix_with_my_kienamatics(Aub.yamlDic['StartPoint'])
+    print("eTc",numpy.matrix(eTc).reshape((4,4)))
     try:
         Robot = Aub.Init_aubo_driver()
         Aub.Aubo_trajectory_init(Robot)
