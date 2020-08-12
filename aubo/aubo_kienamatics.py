@@ -377,7 +377,34 @@ class Aubo_kinematics():
             return True,q_sols_selected
         else:
             return False,{}
-    
+    def GetInverseResult_without_ref(self,T_target):
+        
+        num_sols = 0
+
+        maxq = 175.0/180.0*pi
+        AngleLimit = [(-maxq,maxq),(-maxq,maxq),(-maxq,maxq),(-maxq,maxq),(-maxq,maxq),(-175.0/180.0*pi,32.0/180.0*pi)]
+
+        #inverse and remove zero list
+        # print(T_target)
+        
+        q_sols_all,num_sols = self.aubo_inverse(T_target)
+        # q_sols_all = self.aubo_inverse(T_target)
+        if(len(q_sols_all) != 0):
+            # for i in q_sols_all:
+                # print("num:"+str(i)+' '+"sols",q_sols_all[i])
+            #remove not in limited data 
+            ret2,q_sols_inlimit = self.selectIK(q_sols_all, AngleLimit)
+            # print "q_sols_inlimit",q_sols_inlimit
+            if((len(q_sols_inlimit) != 0) and (True == ret2)):
+            
+                return q_sols_inlimit
+            else:
+            
+                print("no valid sols ")
+
+        else:
+        
+            print("inverse result num is 0")    
 
     def GetInverseResult(self,T_target,q_ref):
     
